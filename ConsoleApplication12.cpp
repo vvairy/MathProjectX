@@ -6,7 +6,6 @@
 #include <string>
 #include<set>
 #include<array>
-#include <format>
 using std::exception;
 using std::cin;
 using std::cout;
@@ -234,9 +233,7 @@ void getCanonicEquation(vector<double> Dot, vector<double> guideVector)
         " = (z - " << Dot[2] << ")/" << guideVector[2] << " = 0";
 }
 class ProbabilityTheory
-{
-public:
-    
+{ 
 protected:
     //ExpectedValue - с англ математическое ожидание
     virtual double getExpectedValue(array<vector<double>, 2>& componentTable) //выборочное среднее составляющЕЙ (1) - аналог математического ожидания для выборки
@@ -262,12 +259,14 @@ protected:
         Dispersion -= pow(getExpectedValue(componentTable), 2); // D[x] = M[x^2] - M^2[x]
         return Dispersion;
     }
+
     double localLaplassFunction(double arg)
     {
         double value;
         value = (1 / sqrt(PI) * pow(EXP, -1 * pow(arg, 2) / 2));
         return value;
     }
+
     unsigned NumberOfCombinations(unsigned NumKits, unsigned NumElements)
     {
         return Factorial(NumKits) / Factorial(NumElements) / Factorial(NumKits - NumElements);
@@ -326,9 +325,10 @@ class BinomialDistribution : ProbabilityTheory
 private:
     double n, p, q;
 };
+
 class NormalDistribution : protected ProbabilityTheory
 {
-
+//...
 };
 class PirsonCheck : ProbabilityTheory
 {
@@ -418,8 +418,6 @@ private:
         }
         return counters;
     }
-
-    
 
     vector<double> getCountersInRange()
     {
@@ -647,8 +645,8 @@ int main()
     Matrix m({ {1, 2, 3,}, {1, 2, 11} , {1,2,-2} });
     std::cout << m.getDeterminantOfMatrix();
     Matrix n({ { 1,4,3 }, { 10, 2, 1 }, { 1,4,5 } });
-    Matrix c = m * n;
-    c.print();
+    Matrix c = m * n; //overloaded operator * to multiply matrixes;
+    c.print(); // print matrix to concole
 }
 /* {
     vector<vector<double>> fillMatrix(size_t row_len, size_t col_len)
