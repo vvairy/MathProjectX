@@ -1,4 +1,3 @@
-﻿#include <iostream>
 #include <vector>
 #include <algorithm>
 #include <cmath>
@@ -6,6 +5,7 @@
 #include <string>
 #include<set>
 #include<array>
+#include<iostream>
 using std::exception;
 using std::cin;
 using std::cout;
@@ -54,21 +54,32 @@ public:
             determinants.push_back(getEveryDeterminant(Koefficients, Answers, i) / determinant(Koefficients));
         return determinants;
     }
- 
-    vector<vector<double>> transpositioneMatrix(const vector<vector<double>> vec)
+
+    void transpositione()
     {
-        vector<vector<double>> TranspositionedMatrix(size(vec[0]));
-        for (size_t i = 0; i < size(vec); i++)
-            for (size_t j = 0; j < size(vec[0]); j++)
-                TranspositionedMatrix[j].push_back(vec[i][j]);
-        return TranspositionedMatrix;
+        for (size_t i = 0; i < this->matrix.size(); i++)
+            for (size_t j = i; j < this->matrix[0].size(); j++)
+                std::swap(this->matrix[i][j], this->matrix[j][i]);
+    }
+    
+    int rank()
+    {
+        Matrix m(this->matrix);
+        int zeroCount = size(m.matrix) - 2;
+        for (size_t j = 0; j < size(m.matrix) - 2; j++)
+            for (size_t i = 0; i < zeroCount; i++)
+            {
+                columnMeltipliedSubtraction(matrix[i], matrix[i + 1], -matrix[i][j] / matrix[i + 1][j]);
+                --zeroCount;
+            }
+        return countNonZeroRows(m);
     }
 protected:
     const double PI = 3.14159;
     const double E = 2.71828;
-    double determinant(const vector<vector<double>>& matrix)
+    double determinant(const Matrix& m)
     {
-        if(!isMatrixSquare(matrix))
+        if (!isMatrixSquare(matrix))
             throw std::exception("Not square Matrix");
         if (size(matrix) == 2)
             return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
@@ -91,7 +102,7 @@ protected:
             throw std::exception("Non-multiplyable matrixes");
         size_t min_len = std::min(size(M1.matrix), size(M1.matrix[0]));
         size_t max_len = std::max(size(M1.matrix), size(M1.matrix[0]));
-        
+
         vector<vector<double>> NewMatrix(min_len);
         for (size_t i = 0; i < min_len; i++)
             for (size_t j = 0; j < min_len; j++)
@@ -104,13 +115,14 @@ protected:
         return NewMatrix;
     }
 
-
 private:
-    bool isMatrixSquare(const vector<vector<double>>& Matrix)
+    template <typename T>
+    bool isMatrixSquare(const T& Matrix)
     {
         return size(Matrix) == size(Matrix[0]) and isMatrixRectangle(Matrix);
     }
-    bool isMatrixRectangle(vector<vector<double>> Matrix)
+    template <typename T>
+    bool isMatrixRectangle(T Matrix)
     {
         for (size_t i = 1; i < size(Matrix); i++)
             if (Matrix[0].size() != Matrix[i].size())
@@ -118,6 +130,29 @@ private:
         return true;
     }
 
+    vector<double> columnMeltipliedSubtraction(vector <double>& subtrahend, vector <double>& subtractor, double multiplier)
+    {
+        if (size(subtrahend) != size(subtractor))
+            throw std::exception("vector sizes are not equal");
+        for (size_t i = 0; i < size(subtractor); ++i)
+            subtrahend[i] -= subtractor[i] * multiplier;
+        return subtrahend;
+    }
+    bool isRowZero(vector<double>& row)
+    {
+        for (size_t j = 0; j < size(row); ++j)
+            if (row[j] != 0)
+                return false;
+        return true;
+    }
+    int countNonZeroRows(Matrix& m)
+    {
+        int count = 0;
+        for (size_t i = 0; i < size(m.matrix); ++i)
+            if (!isRowZero(matrix[i]))
+                count++;
+        return count;
+    }
 
     double getEveryDeterminant(vector <vector<double>>& Matrix, vector <double>& Answers, size_t strikethroughСol)
     {
@@ -132,65 +167,62 @@ private:
     }
 };
 
-
-class Vector2D : protected Matrix
+class MathVector : Matrix
 {
 public:
-    Vector2D()
+    struct Dot
     {
-
-    }
-    Vector2D(double x, double y)
+        array <double, 3> dotCoordinates;
+        Dot(double x, double y, double z)
+        {
+            this->dotCoordinates = { x, y, z };
+        }
+    };
+    MathVector(double x, double y, double z)
     {
-        this->mathVector = { x, y, NULL };
+        this->coordinates = { x, y, z };
     }
-protected:
-    virtual double scalarMultiplication( array<double, 3> mathVecA,  array<double, 3>& mathVecB)
+    MathVector(Dot a, Dot b)
+    {
+        this->coordinates = { b.dotCoordinates[0] - a.dotCoordinates[0], b.dotCoordinates[1] - a.dotCoordinates[1], b.dotCoordinates[2] - a.dotCoordinates[2] };
+    }
+    double scalarMultiplication(MathVector& A, MathVector& B)
     {
         double res = 0;
-        for (size_t i = 0; i < 2; i++)
-            res += mathVecA[i] * mathVecB[i];
+        for (size_t i = 0; i < 3; i++)
+            res += A.coordinates[i] * B.coordinates[i];
         return res;
     }
-    double moduleOfVector(array<double, 3> vecA)
+    double moduleOfVector(MathVector A)
     {
         double sum = 0;
-        for (double el : vecA)
+        for (double el : A.coordinates)
             sum += el * el;
         return sqrt(sum);
     }
-    double cornerBetweenVectors( array<double, 3>& vecA,  array<double, 3>& vecB)
+    double cornerBetweenVectors(MathVector& A, MathVector& B)
     {
-        return acos(scalarMultiplication(vecA, vecB) / (moduleOfVector(vecA) * moduleOfVector(vecB)));
+        return acos(scalarMultiplication(A, B) / (moduleOfVector(A) * moduleOfVector(B)));
     }
-private:
-    array<double, 3> mathVector;
-};
-class Vector3D : public Vector2D
-{
-public:
-    Vector3D(double x, double y, double z)
+ 
+   
+    /*double mixedVectorMultiplication(MathVector firstVector, MathVector secondvector)
     {
-    }
-    double mixedVectorMultiplication(array<array<double, 3>, 3>& mathVectors) 
+        vector<vector<double>> matrixOfVectors = {this->coordinates, firstVector.coordinates, secondvector.coordinates};// надо пофиксить тему с конструктором
+        return determinant(matrixOfVectors);
+    }*/
+    /*double distanceBetweenIntersectingLines(Dot& DotA, MathVector& guideVectorA, Dot& DotB, MathVector& guideVectorB)
     {
-        double firstMinor = mathVectors[1][1] * mathVectors[2][2] - mathVectors[1][2] * mathVectors[2][1];
-        double secondMinor = mathVectors[1][0] * mathVectors[2][2] - mathVectors[1][2] * mathVectors[2][0];
-        double thirdMinor = mathVectors[1][0] * mathVectors[2][1] - mathVectors[1][1] * mathVectors[2][0];
-        return mathVectors[0][0] * firstMinor - mathVectors[0][1] * secondMinor + mathVectors[0][2] * thirdMinor;
-    }
-    double distanceBetweenIntersectingLines(array<double, 3>& DotA, array<double, 3>& guideVectorA, array<double, 3>& DotB, array<double, 3>& guideVectorB)
-    {
-        array<double, 3> distanseBetDots = { DotA[0] - DotB[0], DotA[1] - DotB[1], DotA[2] - DotB[2] };
-        array<array<double, 3>, 3> volume = {};
-        volume[0] = distanseBetDots; volume[1] = (guideVectorA); volume[2] = (guideVectorB);
+        MathVector distanceBetweenDots = MathVector(DotA, DotB);
+        array<MathVector, 3> volume = {};
+        volume[0] = distanceBetweenDots; volume[1] = (guideVectorA); volume[2] = (guideVectorB);
         return abs(mixedVectorMultiplication(volume) / vectorMultiplication(guideVectorA, guideVectorB));
-    }
+    }*/
 
-    double vectorMultiplication(const array<double, 3>& mathVecA, const array<double, 3>& mathVecB)
+    double vectorMultiplication(const MathVector& A, const MathVector& B)
     {
-        array<array<double, 3>, 2> matrix = { mathVecA, mathVecB };
-        array <double, 3> mathVecC = {};
+        array<array<double, 3>, 2> matrix = { A.coordinates, B.coordinates };
+        MathVector C = {0, 0, 0};
         for (size_t idx = 0; idx < 3; idx++)
         {
             vector<vector<double>> newMatrix;
@@ -198,26 +230,22 @@ public:
                 for (size_t j = 0; j < 3; j++)
                     if (j != idx)
                         newMatrix[i][j] = (matrix[i][j]);
-            mathVecC[idx] = (determinant(newMatrix));
+            C.coordinates[idx] = (determinant(newMatrix));
             newMatrix.clear();
         }
-        return moduleOfVector(mathVecC);
+        return moduleOfVector(C);
     }
-    double volumeOfParallelepipedOnVectors(array<array<double,3>,3>& mathVectors)
+    /*double volumeOfParallelepipedOnVectors(array<array<double, 3>, 3>& mathVectors)
     {
         return abs(mixedVectorMultiplication(mathVectors));
-    }
+    }*/
 
-    double volumeOfPiramidOnVectors(array<array<double, 3>, 3>& mathVectors)
+    /*double volumeOfPiramidOnVectors(array<array<double, 3>, 3>& mathVectors)
     {
         return volumeOfParallelepipedOnVectors(mathVectors) / 6;
-    }
-    bool areDotsInPlane(array<array<double, 3>, 3>& coordinatesOfDots)
-    {
-        array<array<double, 3>, 3> vectors = getVectorsFromDots(coordinatesOfDots);
-        return mixedVectorMultiplication(vectors) == 0;
-    }
+    }*/
 private:
+    array <double, 3> coordinates;
     array<array<double, 3>, 3> getVectorsFromDots(array<array<double, 3>, 3>& coordinatesOfDots)
     {
         array<array<double, 3>, 3> mathVectors;
@@ -233,7 +261,7 @@ void getCanonicEquation(vector<double> Dot, vector<double> guideVector)
         " = (z - " << Dot[2] << ")/" << guideVector[2] << " = 0";
 }
 class ProbabilityTheory
-{ 
+{
 protected:
     //ExpectedValue - с англ математическое ожидание
     virtual double getExpectedValue(array<vector<double>, 2>& componentTable) //выборочное среднее составляющЕЙ (1) - аналог математического ожидания для выборки
@@ -328,7 +356,7 @@ private:
 
 class NormalDistribution : protected ProbabilityTheory
 {
-//...
+    //...
 };
 class PirsonCheck : ProbabilityTheory
 {
@@ -647,6 +675,9 @@ int main()
     Matrix n({ { 1,4,3 }, { 10, 2, 1 }, { 1,4,5 } });
     Matrix c = m * n; //overloaded operator * to multiply matrixes;
     c.print(); // print matrix to concole
+    c.transpositione();
+    c.print(); // print matrix to concole
+    std::cout << c.rank();
 }
 /* {
     vector<vector<double>> fillMatrix(size_t row_len, size_t col_len)
