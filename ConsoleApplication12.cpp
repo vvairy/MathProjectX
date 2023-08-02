@@ -61,17 +61,28 @@ public:
             for (size_t j = i; j < this->matrix[0].size(); j++)
                 std::swap(this->matrix[i][j], this->matrix[j][i]);
     }
-    
+    bool isThereZeroColomn(Matrix m)
+    {
+        for (size_t j = 0; j < size(m.matrix[0]); j++)
+        {
+            for (size_t i = 0; i < size(m.matrix); ++i)
+                if (m.matrix[i][j] != 0)
+                    break;
+            return true;
+        }
+    }
     int rank()
     {
         Matrix m(this->matrix);
-        int zeroCount = size(m.matrix) - 2;
-        for (size_t j = 0; j < size(m.matrix) - 2; j++)
+        int zeroCount = size(m.matrix) - 1;
+        m.print();
+        for (size_t j = 0; j < size(m.matrix) - 1; j++)
             for (size_t i = 0; i < zeroCount; i++)
             {
-                columnMeltipliedSubtraction(matrix[i], matrix[i + 1], -matrix[i][j] / matrix[i + 1][j]);
+                columnMeltipliedSubtraction(m.matrix[i], m.matrix[i + 1], -m.matrix[i][j] / m.matrix[i + 1][j]);
                 --zeroCount;
             }
+        m.print();
         return countNonZeroRows(m);
     }
 protected:
@@ -79,24 +90,24 @@ protected:
     const double E = 2.71828;
     double determinant(const Matrix& m)
     {
-        if (!isMatrixSquare(matrix))
+        if (!isMatrixSquare(m.matrix))
             throw std::exception("Not square Matrix");
-        if (size(matrix) == 2)
-            return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+        if (size(m.matrix) == 2)
+            return m.matrix[0][0] * m.matrix[1][1] - m.matrix[0][1] * m.matrix[1][0];
         double det = 0;
-        for (size_t idx = 0; idx < size(matrix); idx++)
+        for (size_t idx = 0; idx < size(m.matrix); idx++)
         {
-            vector<vector<double>> NewMatrix(size(matrix) - 1);
-            for (size_t i = 1; i < size(matrix); i++)
-                for (size_t j = 0; j < size(matrix); j++)
+            vector<vector<double>> Newmatrix(size(m.matrix) - 1);
+            for (size_t i = 1; i < size(m.matrix); i++)
+                for (size_t j = 0; j < size(m.matrix); j++)
                     if (j != idx)
-                        NewMatrix[i - 1].push_back(matrix[i][j]);
-            det += pow(-1, idx) * matrix[0][idx] * determinant(NewMatrix);
-            NewMatrix.clear();
+                        Newmatrix[i - 1].push_back(m.matrix[i][j]);
+            det += pow(-1, idx) * m.matrix[0][idx] * determinant(Newmatrix);
+            Newmatrix.clear();
         }
         return det;
     }
-    friend Matrix operator* (const Matrix& M1, const Matrix& M2)
+    /*friend Matrix operator* (const Matrix& M1, const Matrix& M2)
     {
         if (size(M1.matrix) != size(M2.matrix[0]) or size(M2.matrix) != size(M1.matrix[0]))
             throw std::exception("Non-multiplyable matrixes");
@@ -113,7 +124,7 @@ protected:
                 NewMatrix[i].push_back(el);
             }
         return NewMatrix;
-    }
+    }*/
 
 private:
     template <typename T>
@@ -149,11 +160,10 @@ private:
     {
         int count = 0;
         for (size_t i = 0; i < size(m.matrix); ++i)
-            if (!isRowZero(matrix[i]))
+            if (!isRowZero(m.matrix[i]))
                 count++;
         return count;
     }
-
     double getEveryDeterminant(vector <vector<double>>& Matrix, vector <double>& Answers, size_t strikethroughСol)
     {
         vector<vector<double>> NewMatrix(size(Matrix));
@@ -166,18 +176,32 @@ private:
         return determinant(NewMatrix);
     }
 };
+struct Dot
+{
+    array <double, 3> dotCoordinates;
+    Dot(double x, double y, double z)
+    {
+        this->dotCoordinates = { x, y, z };
+    }
+    Dot()
+    {
+        this->dotCoordinates = { 0,0,0 };
+    }
+    static bool areInOnePLane(vector <Dot> Dots)
+    {
+        vector<vector<double>> matr(Dots.size());
+        for (size_t i = 0; i < size(Dots); ++i)
+            for (size_t j = 0; j < 3; ++j)
+                matr[i].push_back(Dots[i].dotCoordinates[j]);
+        Matrix m(matr);
+        return m.Matrix::rank() != 3;
+    }
 
-class MathVector : Matrix
+};
+class MathVector
 {
 public:
-    struct Dot
-    {
-        array <double, 3> dotCoordinates;
-        Dot(double x, double y, double z)
-        {
-            this->dotCoordinates = { x, y, z };
-        }
-    };
+    array<double, 3> coordinates;
     MathVector(double x, double y, double z)
     {
         this->coordinates = { x, y, z };
@@ -186,66 +210,54 @@ public:
     {
         this->coordinates = { b.dotCoordinates[0] - a.dotCoordinates[0], b.dotCoordinates[1] - a.dotCoordinates[1], b.dotCoordinates[2] - a.dotCoordinates[2] };
     }
-    double scalarMultiplication(MathVector& A, MathVector& B)
+    MathVector()
+    {
+        this->coordinates = { 0, 0, 0 };
+    }
+    friend MathVector operator^ (MathVector A, MathVector B)//Vector Multiplication Of Vectors
+    {
+        double x = A.coordinates[1] * B.coordinates[2] - A.coordinates[2] * B.coordinates[1];
+        double y = A.coordinates[0] * B.coordinates[2] - A.coordinates[2] * B.coordinates[0];
+        double z = A.coordinates[0] * B.coordinates[1] - A.coordinates[1] * B.coordinates[0];
+        MathVector C(x, -y, z);
+        return C;
+    }
+    friend MathVector operator* (MathVector A, double n)
+    {
+        MathVector B(A.coordinates[0] * n, A.coordinates[1] * n, A.coordinates[2] * n);
+        return B;
+    }
+    friend double operator* (MathVector A, MathVector B)
     {
         double res = 0;
         for (size_t i = 0; i < 3; i++)
             res += A.coordinates[i] * B.coordinates[i];
         return res;
     }
-    double moduleOfVector(MathVector A)
+
+    static double moduleOfVector(MathVector A)
     {
         double sum = 0;
         for (double el : A.coordinates)
             sum += el * el;
         return sqrt(sum);
     }
-    double cornerBetweenVectors(MathVector& A, MathVector& B)
-    {
-        return acos(scalarMultiplication(A, B) / (moduleOfVector(A) * moduleOfVector(B)));
-    }
- 
-   
-    /*double mixedVectorMultiplication(MathVector firstVector, MathVector secondvector)
-    {
-        vector<vector<double>> matrixOfVectors = {this->coordinates, firstVector.coordinates, secondvector.coordinates};// надо пофиксить тему с конструктором
-        return determinant(matrixOfVectors);
-    }*/
-    /*double distanceBetweenIntersectingLines(Dot& DotA, MathVector& guideVectorA, Dot& DotB, MathVector& guideVectorB)
-    {
-        MathVector distanceBetweenDots = MathVector(DotA, DotB);
-        array<MathVector, 3> volume = {};
-        volume[0] = distanceBetweenDots; volume[1] = (guideVectorA); volume[2] = (guideVectorB);
-        return abs(mixedVectorMultiplication(volume) / vectorMultiplication(guideVectorA, guideVectorB));
-    }*/
 
-    double vectorMultiplication(const MathVector& A, const MathVector& B)
+    static double cornerBetweenVectors(MathVector A, MathVector B)
     {
-        array<array<double, 3>, 2> matrix = { A.coordinates, B.coordinates };
-        MathVector C = {0, 0, 0};
-        for (size_t idx = 0; idx < 3; idx++)
-        {
-            vector<vector<double>> newMatrix;
-            for (size_t i = 0; i < 2; i++)
-                for (size_t j = 0; j < 3; j++)
-                    if (j != idx)
-                        newMatrix[i][j] = (matrix[i][j]);
-            C.coordinates[idx] = (determinant(newMatrix));
-            newMatrix.clear();
-        }
-        return moduleOfVector(C);
+        return acos((A * B) / (moduleOfVector(A) * moduleOfVector(B)));
     }
-    /*double volumeOfParallelepipedOnVectors(array<array<double, 3>, 3>& mathVectors)
-    {
-        return abs(mixedVectorMultiplication(mathVectors));
-    }*/
 
-    /*double volumeOfPiramidOnVectors(array<array<double, 3>, 3>& mathVectors)
+    double volumeOfParallelepipedOnVectors(MathVector A, MathVector B, MathVector C)
     {
-        return volumeOfParallelepipedOnVectors(mathVectors) / 6;
-    }*/
+        return abs((A ^ B) * C); // Mixed Vector Multiplication
+    }
+
+    double volumeOfPiramidOnVectors(MathVector A, MathVector B, MathVector C)
+    {
+        return abs((A ^ B) * C) / 6;
+    }
 private:
-    array <double, 3> coordinates;
     array<array<double, 3>, 3> getVectorsFromDots(array<array<double, 3>, 3>& coordinatesOfDots)
     {
         array<array<double, 3>, 3> mathVectors;
@@ -255,6 +267,46 @@ private:
         return mathVectors;
     }
 };
+class Line : public MathVector
+{
+public:
+
+    Line(MathVector guideVector, Dot dotOnLine) : MathVector(guideVector)
+    {
+        this->dot = Dot(dotOnLine);
+        this->guideVector = MathVector(guideVector);
+    }
+
+    static double distanceBetweenLines(Line A, Line B)
+    {
+        if (moduleOfVector(A.guideVector ^ B.guideVector) == 0)
+            return 0;
+        MathVector distanceBetweenRandomDots = { A.dot, B.dot };
+        return abs((A.guideVector ^ B.guideVector) * distanceBetweenRandomDots / moduleOfVector(A.guideVector ^ B.guideVector));
+    }
+
+    Dot dot;
+    MathVector guideVector;
+};
+
+class Plane : MathVector
+{
+public:
+Plane (MathVector normalVector, Dot dotOnLine) : MathVector(normalVector)
+    {
+        this->dot = Dot(dotOnLine);
+        this->normalVector = MathVector(normalVector);
+    }
+
+    static double cornerBetweenPlanes(Plane A, Plane B)
+    {
+        return asin(A.normalVector * B.normalVector / moduleOfVector(A.normalVector) / moduleOfVector(B.normalVector));
+    }
+
+    MathVector normalVector;
+    Dot dot;
+};
+
 void getCanonicEquation(vector<double> Dot, vector<double> guideVector)
 {
     std::cout << "(x - " << Dot[0] << ")/" << guideVector[0] << " = (y - " << Dot[1] << ")/" << guideVector[1] << //чет говно какое-то
@@ -670,14 +722,20 @@ int main()
     PirsonCheck pirsonCheck(input_data);
     pirsonCheck.isPirson();
     pirsonCheck.getResults();*/
-    Matrix m({ {1, 2, 3,}, {1, 2, 11} , {1,2,-2} });
-    std::cout << m.getDeterminantOfMatrix();
-    Matrix n({ { 1,4,3 }, { 10, 2, 1 }, { 1,4,5 } });
-    Matrix c = m * n; //overloaded operator * to multiply matrixes;
-    c.print(); // print matrix to concole
-    c.transpositione();
-    c.print(); // print matrix to concole
-    std::cout << c.rank();
+    Dot dot1(1, 2, 3);
+    Dot dot2(10, 20, 30);
+    Dot dot3(4, 50, 40);
+    Dot dot4(-2, -3, -1);
+    //std::cout << Dot::areInOnePLane({ dot1, dot2, dot3, dot4 });
+    Dot c(1,1, 1);
+    MathVector m(2, 3, 1);
+    MathVector b(1, 1, 1);
+    Dot n(1, 1, 1);
+    Line a(m, c);
+    Line k(b, n);
+    std::cout << Line::distanceBetweenLines(a, k);
+    //std::cout << Line::distanceBetweenLines(a, k);
+
 }
 /* {
     vector<vector<double>> fillMatrix(size_t row_len, size_t col_len)
